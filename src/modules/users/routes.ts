@@ -6,10 +6,12 @@ import { db } from "@/server/db"
 import { user } from "@/server/db/auth-schema"
 import { requireAdmin, requireAuth } from "@/server/middleware"
 import { body, describe, idParam, listOf } from "@/server/openapi"
+import { LIMITS, rateLimit } from "@/server/rate-limit"
 
 const tag = "users"
 const ROLES = ["admin", "member"] as const
-const input = z.object({ role: z.enum(ROLES) })
+// .strict(): a caller sending {roles:["admin"]} deserves a 422, not a silent no-op.
+const input = z.object({ role: z.enum(ROLES) }).strict()
 const row = z.object({
   id: z.string(),
   name: z.string(),
@@ -24,6 +26,7 @@ export const routes = new Hono()
 
   .get(
     "/",
+    rateLimit(LIMITS.read),
     describe({
       tag,
       summary: "List everyone",
@@ -50,6 +53,7 @@ export const routes = new Hono()
 
   .patch(
     "/:id",
+    rateLimit(LIMITS.write),
     describe({
       tag,
       summary: "Change someone's role",

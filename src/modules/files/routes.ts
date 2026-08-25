@@ -1,31 +1,52 @@
 import { createReadStream } from "node:fs"
 import { Readable } from "node:stream"
 
-import { Hono } from "hono"
-import { and, desc, eq, type SQL } from "drizzle-orm"
-
+import { and, eq, isNull } from "drizzle-orm"
 import { createSelectSchema } from "drizzle-zod"
+import { Hono } from "hono"
 
 import { db } from "@/server/db"
 import { requireAuth } from "@/server/middleware"
-import { describe, idParam, listOf, type Param } from "@/server/openapi"
+import { describe, idParam, listParams, pageOf, type Param } from "@/server/openapi"
+import { LIMITS, rateLimit } from "@/server/rate-limit"
+import { actions, listOrder, listWhere, page, parseList, type ListSpec } from "@/server/rest"
 
 import { files } from "./schema"
-import { MAX_BYTES, newKey, remove, resolveKey, write } from "./storage"
+import { MAX_BYTES, newKey, resolveKey, write } from "./storage"
 
 const tag = "files"
 const row = createSelectSchema(files)
-const scope: Param[] = [
+
+const spec: ListSpec = {
+  table: files,
+  columns: {
+    name: files.name,
+    mime_type: files.mimeType,
+    size: files.size,
+    entity_type: files.entityType,
+    entity_id: files.entityId,
+    created_at: files.createdAt,
+  },
+  id: files.id,
+  defaultSort: "-created_at",
+  deletedAt: files.deletedAt,
+}
+
+const LIST_COLUMNS = ["name", "mime_type", "size", "entity_type", "entity_id", "created_at"]
+
+const PARENT_PARAMS: Param[] = [
   {
-    name: "entityType",
-    in: "query",
-    description: 'Scope to a record type, e.g. "project"',
+    name: "parentType",
+    in: "path",
+    required: true,
+    description: "Parent collection, e.g. projects",
     schema: { type: "string" },
   },
   {
-    name: "entityId",
-    in: "query",
-    description: "Id of that record",
+    name: "parentId",
+    in: "path",
+    required: true,
+    description: "Parent record id",
     schema: { type: "string" },
   },
 ]
@@ -33,23 +54,32 @@ const scope: Param[] = [
 export const routes = new Hono()
   .use("*", requireAuth)
 
-  .get("/", describe({ tag, summary: "List files", ok: listOf(row), params: scope }), async (c) => {
-    const { entityType, entityId } = c.req.query()
-    const where: SQL[] = []
-    if (entityType) where.push(eq(files.entityType, entityType))
-    if (entityId) where.push(eq(files.entityId, entityId))
-
-    const rows = await db
-      .select()
-      .from(files)
-      .where(where.length ? and(...where) : undefined)
-      .orderBy(desc(files.createdAt))
-      .limit(500)
-    return c.json({ rows, total: rows.length })
-  })
+  .get(
+    "/",
+    rateLimit(LIMITS.read),
+    describe({
+      tag,
+      summary: "List files",
+      description: "Scope with `?filter=entity_type:projects;entity_id:<id>`.",
+      ok: pageOf(row),
+      params: listParams(LIST_COLUMNS),
+      errors: [400, 429],
+    }),
+    async (c) => {
+      const request = parseList(c, spec)
+      const rows = await db
+        .select()
+        .from(files)
+        .where(listWhere(request, spec))
+        .orderBy(...listOrder(request, spec))
+        .limit(request.pageSize + 1)
+      return c.json(page(rows, request, spec))
+    },
+  )
 
   .post(
     "/",
+    rateLimit(LIMITS.upload),
     describe({
       tag,
       summary: "Upload a file",
@@ -61,7 +91,10 @@ export const routes = new Hono()
             required: ["file"],
             properties: {
               file: { type: "string", format: "binary" },
-              entityType: { type: "string", description: 'Scope to a record type, e.g. "project"' },
+              entityType: {
+                type: "string",
+                description: 'Scope to a record type, e.g. "projects"',
+              },
               entityId: { type: "string", description: "Id of that record" },
             },
           },
@@ -69,14 +102,25 @@ export const routes = new Hono()
       },
       ok: row,
       okStatus: 201,
-      errors: [413, 422],
+      errors: [413, 422, 429],
     }),
     async (c) => {
       const form = await c.req.formData()
       const file = form.get("file")
+
       if (!(file instanceof File)) return c.json({ error: "Expected a file field" }, 422)
+      // A zero-byte upload is a failed upload. Accepting it stores a file that
+      // can never be opened, and the CHECK constraint would reject it anyway.
+      if (file.size === 0) return c.json({ error: "File is empty" }, 422)
       if (file.size > MAX_BYTES) {
         return c.json({ error: `Too large. Limit is ${MAX_BYTES / 1024 / 1024}MB.` }, 413)
+      }
+
+      // Scope is all-or-nothing: half a reference points nowhere.
+      const entityType = (form.get("entityType") as string) || null
+      const entityId = (form.get("entityId") as string) || null
+      if (Boolean(entityType) !== Boolean(entityId)) {
+        return c.json({ error: "Send entityType and entityId together, or neither" }, 422)
       }
 
       const key = newKey(file.name)
@@ -88,8 +132,8 @@ export const routes = new Hono()
           mimeType: file.type || "application/octet-stream",
           size,
           storageKey: key,
-          entityType: (form.get("entityType") as string) || null,
-          entityId: (form.get("entityId") as string) || null,
+          entityType,
+          entityId,
           uploadedBy: c.get("user").id,
         })
         .returning()
@@ -98,7 +142,8 @@ export const routes = new Hono()
   )
 
   .get(
-    "/:id/download",
+    "/:id/content",
+    rateLimit(LIMITS.read),
     describe({
       tag,
       summary: "Download a file",
@@ -109,38 +154,94 @@ export const routes = new Hono()
       errors: [404],
     }),
     async (c) => {
-      const [row] = await db
+      const [found] = await db
         .select()
         .from(files)
-        .where(eq(files.id, c.req.param("id")))
-      if (!row) return c.json({ error: "Not found" }, 404)
+        .where(and(eq(files.id, c.req.param("id")), isNull(files.deletedAt)))
+      if (!found) return c.json({ error: "Not found" }, 404)
 
-      const stream = createReadStream(resolveKey(row.storageKey))
+      const stream = createReadStream(resolveKey(found.storageKey))
       return new Response(Readable.toWeb(stream) as ReadableStream, {
         headers: {
-          "Content-Type": row.mimeType,
-          "Content-Length": String(row.size),
-          "Content-Disposition": `attachment; filename="${encodeURIComponent(row.name)}"`,
+          "Content-Type": found.mimeType,
+          "Content-Length": String(found.size),
+          "Content-Disposition": `attachment; filename="${encodeURIComponent(found.name)}"`,
         },
       })
     },
   )
 
+  .post(
+    "/:id",
+    rateLimit(LIMITS.write),
+    describe({
+      tag,
+      summary: "Run an action on a file",
+      description: "`:restore` undoes a soft delete.",
+      ok: row,
+      params: [{ ...idParam, description: "Record id followed by `:action`, e.g. `abc:restore`" }],
+      errors: [404],
+    }),
+    actions("id", {
+      restore: async (c, id) => {
+        const [restored] = await db
+          .update(files)
+          .set({ deletedAt: null })
+          .where(eq(files.id, id))
+          .returning()
+        return restored ? c.json(restored) : c.json({ error: "Not found" }, 404)
+      },
+    }),
+  )
+
   .delete(
     "/:id",
+    rateLimit(LIMITS.write),
     describe({
       tag,
       summary: "Delete a file",
+      description:
+        "Soft delete. The bytes stay on disk so `:restore` works; purging is a housekeeping job.",
       params: [idParam],
       errors: [404],
     }),
     async (c) => {
-      const [row] = await db
-        .delete(files)
-        .where(eq(files.id, c.req.param("id")))
+      const [deleted] = await db
+        .update(files)
+        .set({ deletedAt: new Date() })
+        .where(and(eq(files.id, c.req.param("id")), isNull(files.deletedAt)))
         .returning()
-      if (!row) return c.json({ error: "Not found" }, 404)
-      await remove(row.storageKey)
-      return c.body(null, 204)
+      return deleted ? c.body(null, 204) : c.json({ error: "Not found" }, 404)
     },
   )
+
+/** Cross-referenced form: `GET /api/v1/projects/{id}/files`. */
+export const nested = new Hono().use("*", requireAuth).get(
+  "/",
+  rateLimit(LIMITS.read),
+  describe({
+    tag,
+    summary: "List a record's files",
+    ok: pageOf(row),
+    params: [...PARENT_PARAMS, ...listParams(LIST_COLUMNS)],
+    errors: [400, 429],
+  }),
+  async (c) => {
+    const parentType = c.req.param("parentType")
+    const parentId = c.req.param("parentId")
+    if (!parentType || !parentId) {
+      return c.json({ error: "Both parentType and parentId are required" }, 400)
+    }
+
+    const request = parseList(c, spec)
+    const rows = await db
+      .select()
+      .from(files)
+      .where(
+        listWhere(request, spec, [eq(files.entityType, parentType), eq(files.entityId, parentId)]),
+      )
+      .orderBy(...listOrder(request, spec))
+      .limit(request.pageSize + 1)
+    return c.json(page(rows, request, spec))
+  },
+)

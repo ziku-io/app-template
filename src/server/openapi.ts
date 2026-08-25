@@ -19,12 +19,61 @@ const asJson = (schema: ZodType) => ({
 /** Every list endpoint answers with the same envelope. */
 export const listOf = (row: ZodType) => z.object({ rows: z.array(row), total: z.number().int() })
 
+/** Cursor-paged lists: follow `nextPageToken` until it comes back null. */
+export const pageOf = (row: ZodType) =>
+  z.object({
+    rows: z.array(row),
+    nextPageToken: z
+      .string()
+      .nullable()
+      .describe("Pass as ?pageToken= for the next page. Null on the last page."),
+  })
+
 export interface Param {
   name: string
   in: "query" | "path"
   description?: string
   required?: boolean
   schema: Record<string, unknown>
+}
+
+/** The standard list parameters, naming the columns this endpoint allows. */
+export function listParams(columns: string[], extra: Param[] = []): Param[] {
+  const allowed = columns.join(", ")
+  return [
+    {
+      name: "pageSize",
+      in: "query",
+      description: `Rows per page, 1-200 (default 50)`,
+      schema: { type: "integer" },
+    },
+    {
+      name: "pageToken",
+      in: "query",
+      description: "Cursor from the previous page's nextPageToken",
+      schema: { type: "string" },
+    },
+    {
+      name: "sort_by",
+      in: "query",
+      description: `One of: ${allowed}. Prefix with - for descending.`,
+      schema: { type: "string" },
+    },
+    {
+      name: "filter",
+      in: "query",
+      description: `field:value pairs, e.g. status:Lead,Active. Fields: ${allowed}. Repeatable.`,
+      schema: { type: "string" },
+    },
+    { name: "q", in: "query", description: "Free-text search", schema: { type: "string" } },
+    {
+      name: "includeDeleted",
+      in: "query",
+      description: "Include soft-deleted rows",
+      schema: { type: "boolean" },
+    },
+    ...extra,
+  ]
 }
 
 /** The query parameters every list endpoint accepts. */
@@ -55,7 +104,9 @@ export const idParam: Param = {
 }
 
 const ERROR_TEXT: Record<number, string> = {
+  400: "Bad request, e.g. an unknown sort_by or filter field",
   401: "No session",
+  429: "Rate limited; see the RateLimit-* headers",
   403: "Not allowed",
   404: "Not found",
   409: "Conflict",

@@ -1,42 +1,37 @@
 # API conventions
 
+The rules themselves are in **[rest-standards.md](rest-standards.md)**. This page
+is how you apply them when writing a route.
+
 The live reference is at **`/api/docs`**, generated from the routes actually
 mounted. The raw document is at `/api/openapi.json`.
 
 ## Lists
 
-Every list endpoint takes the same query parameters:
-
-| Parameter | Meaning |
-|---|---|
-| `q` | free-text search |
-| `sort` | column name, `-` prefix for descending |
-| `limit` / `offset` | paging, capped at 1000 |
-| *field*`=a,b` | filter by a comma-separated list |
-
-and answers the same envelope:
-
-```json
-{ "rows": [ … ], "total": 42 }
+```http
+GET /api/v1/projects?pageSize=50&sort_by=-created_at&filter=status:Lead,Active&q=acme
+→ { "rows": [ … ], "nextPageToken": "eyJ2…" }
 ```
 
-`total` is the count *after* filtering, so a client can page without a second
-request. Keep the envelope even for endpoints that will never page — `DataTable`
-and the query hooks assume it.
+Follow `nextPageToken` until it is `null`. `parseList` + `listWhere` +
+`listOrder` + `page` do all of it; fetch `pageSize + 1` rows so `page()` can tell
+whether another page exists without counting the table.
 
 ## Status codes
 
-| Code | When |
-|---|---|
-| `200` | read, or an update returning the row |
-| `201` | created, body is the new row |
-| `204` | deleted, no body |
-| `401` | no session |
-| `403` | signed in, not allowed |
-| `404` | no such record, or one you may not see |
-| `409` | refused because of state, e.g. removing your own admin role |
-| `413` | upload over the limit |
-| `422` | body failed validation |
+| Code  | When                                                                 |
+| ----- | -------------------------------------------------------------------- |
+| `200` | read, or an update returning the row                                 |
+| `201` | created, body is the new row                                         |
+| `204` | deleted, no body                                                     |
+| `401` | no session                                                           |
+| `403` | signed in, not allowed                                               |
+| `404` | no such record, or one you may not see                               |
+| `400` | unusable query, e.g. an unknown `sort_by` or a malformed `pageToken` |
+| `409` | refused because of state, e.g. removing a record's last owner        |
+| `413` | upload over the limit                                                |
+| `422` | body failed validation, including an unknown field                   |
+| `429` | over a rate limit; see the `RateLimit-*` headers                     |
 
 Answer `404` rather than `403` for records the caller may not see. `403` tells
 them the record exists.
@@ -79,7 +74,11 @@ show it directly.
 
 `body(schema)` validates and documents in one step. The handler reads
 `c.req.valid("json")`; there is no `safeParse` in a handler anywhere in this
-template, and there should not be.
+template, and there should not be. Inside an `actions()` handler use
+`actionBody<T>(c)` — the context there is bare.
+
+Every input schema ends in `.strict()`. An unknown field is a typo or a stale
+client, and either way silently dropping it ships a bug.
 
 ## Auth
 
@@ -93,5 +92,9 @@ Better Auth rejects state-changing requests whose `Origin` does not match
 ## Pagination in the browser
 
 `DataTable` filters and sorts client-side over the rows it was given, which is
-right up to a few thousand. Past that, feed the query parameters above from the
-table's `onStateChange` and let Postgres do the work.
+right up to a few thousand. Past that, feed `pageSize`/`pageToken`/`sort_by`/
+`filter` from the table's `onStateChange` and let Postgres do the work.
+
+## Checks
+
+Every guard gets a test. See [testing.md](testing.md).

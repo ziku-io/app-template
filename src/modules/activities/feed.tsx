@@ -30,20 +30,21 @@ export function ActivityFeed({
 }) {
   const queryClient = useQueryClient()
   const key = ["activity", entityType, entityId]
-  const params = `?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}`
+  // Cross-referenced form: the parent is in the path, not a query parameter.
+  const path = `/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}/activities`
 
   const { data } = useQuery({
     queryKey: key,
-    queryFn: () => get<{ rows: Activity[] }>(`/activity${params}`),
+    queryFn: () => get<{ rows: Activity[] }>(path),
   })
   const invalidate = () => queryClient.invalidateQueries({ queryKey: key })
 
   const add = useMutation({
-    mutationFn: (text: string) => post<Activity>("/activity", { entityType, entityId, text }),
+    mutationFn: (body: string) => post<Activity>("/activities", { entityType, entityId, body }),
     onSuccess: invalidate,
   })
   const remove = useMutation({
-    mutationFn: (id: string) => del(`/activity/${id}`),
+    mutationFn: (id: string) => del(`/activities/${id}`),
     onSuccess: invalidate,
   })
 
@@ -80,7 +81,7 @@ export function ActivityFeed({
                   <span className="text-xs text-muted-foreground">· {a.kind}</span>
                 )}
               </div>
-              <p className="whitespace-pre-wrap">{a.text}</p>
+              <p className="whitespace-pre-wrap">{a.body}</p>
             </div>
             <Button
               variant="ghost"

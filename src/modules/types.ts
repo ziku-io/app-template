@@ -11,9 +11,15 @@ import type { Icon } from "@phosphor-icons/react"
 
 export interface ServerModule {
   id: string
-  /** Where the routes mount, e.g. "/api/files". */
+  /** Mounted under /api/v1, e.g. "/files" → /api/v1/files. */
   basePath: string
   routes: Hono
+  /**
+   * Extra mounts under /api/v1, for cross-referenced sub-collections:
+   * `{ path: "/:parentType/:parentId/files" }` serves
+   * /api/v1/projects/{id}/files.
+   */
+  extraMounts?: { path: string; routes: Hono }[]
 }
 
 export interface ModuleNavItem {

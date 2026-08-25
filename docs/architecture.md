@@ -41,12 +41,12 @@ cloned template does before `pnpm db:generate`.
 
 ## Where state lives
 
-| Thing | Where |
-|---|---|
-| Sessions | Postgres, via Better Auth's `session` table; cookie holds the token |
-| Uploads | Disk under `UPLOAD_DIR`; only the key is in Postgres |
-| Table views, filters | The browser's `localStorage`, keyed per table |
-| Everything else | Postgres |
+| Thing                | Where                                                               |
+| -------------------- | ------------------------------------------------------------------- |
+| Sessions             | Postgres, via Better Auth's `session` table; cookie holds the token |
+| Uploads              | Disk under `UPLOAD_DIR`; only the key is in Postgres                |
+| Table views, filters | The browser's `localStorage`, keyed per table                       |
+| Everything else      | Postgres                                                            |
 
 Nothing is held in the Node process, so it restarts and scales horizontally
 without ceremony. The one exception worth knowing about: uploads are on the

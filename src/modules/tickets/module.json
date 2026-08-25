@@ -1,0 +1,6 @@
+{
+  "id": "tickets",
+  "title": "Tickets",
+  "description": "Threaded intake and support queue: statuses, priorities, assignment, and a message thread with staff-only internal notes.",
+  "requires": []
+}

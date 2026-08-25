@@ -6,9 +6,12 @@ export type Json<T> = {
   [K in keyof T]: T[K] extends Date ? string : T[K] extends Date | null ? string | null : T[K]
 }
 
+/** Every versioned endpoint hangs off here. Auth lives outside it. */
+export const API_BASE = "/api/v1"
+
 /** Thin fetch wrapper. Cookies carry the session, so nothing to attach. */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init.headers },
   })

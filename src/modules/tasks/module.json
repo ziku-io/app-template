@@ -1,0 +1,6 @@
+{
+  "id": "tasks",
+  "title": "Tasks",
+  "description": "Assignable work items with one level of subtasks. Tasks can hang off any record through entityType/entityId.",
+  "requires": []
+}

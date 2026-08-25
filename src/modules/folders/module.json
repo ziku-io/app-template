@@ -1,0 +1,6 @@
+{
+  "id": "folders",
+  "title": "Folders",
+  "description": "A nested tree of folders over the files module. Files join a folder through entityType=\"folder\" and entityId=<folder id>.",
+  "requires": ["files"]
+}

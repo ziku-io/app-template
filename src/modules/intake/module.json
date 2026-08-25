@@ -1,0 +1,12 @@
+{
+  "id": "intake",
+  "title": "Intake",
+  "description": "Hardened public form endpoint for contact, enquiry and waitlist submissions, plus an admin-only inbox. Honeypot, per-IP rate limit, and hashed IPs.",
+  "requires": [],
+  "env": [
+    {
+      "key": "INTAKE_IP_SALT",
+      "description": "Secret salt for the SHA-256 IP hash. Without it an IPv4 hash is trivially reversible; rotating it breaks the link to older rows."
+    }
+  ]
+}

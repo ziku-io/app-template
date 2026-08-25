@@ -1,0 +1,6 @@
+{
+  "id": "docrequests",
+  "title": "Document requests",
+  "description": "Ask someone to upload a specific document, then fulfil the request with the file that arrives. The destination folder comes off the request, so nothing can be misfiled.",
+  "requires": ["files"]
+}

@@ -19,7 +19,27 @@ export async function readModules(): Promise<ModuleManifest[]> {
     if (!e.isDirectory()) continue
     const file = path.join(MODULES, e.name, "module.json")
     if (!existsSync(file)) continue
-    manifests.push(JSON.parse(await readFile(file, "utf8")))
+
+    const manifest: ModuleManifest = JSON.parse(await readFile(file, "utf8"))
+
+    // The folder name is the id: it is what the generated imports point at.
+    // A mismatch used to drop the module from the registry in silence — the
+    // app booted, the routes were simply gone.
+    if (manifest.id !== e.name) {
+      throw new Error(
+        `src/modules/${e.name}/module.json declares id "${manifest.id}". ` +
+          `The id must equal the folder name, or the generated registry imports a path that does not exist.`
+      )
+    }
+    // The id becomes a JS identifier in the generated barrels.
+    if (!/^[a-z][a-z0-9]*$/.test(manifest.id)) {
+      throw new Error(
+        `Module id "${manifest.id}" must be lowercase letters and digits, starting with a letter — ` +
+          `it is used as an import name in the generated registries.`
+      )
+    }
+
+    manifests.push(manifest)
   }
   return manifests.sort((a, b) => a.id.localeCompare(b.id))
 }

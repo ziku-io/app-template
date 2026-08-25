@@ -1,0 +1,6 @@
+{
+  "id": "contacts",
+  "title": "Contacts",
+  "description": "Named people attached to any record. Drop <ContactList entityType entityId /> onto a detail page, or browse them all at /contacts.",
+  "requires": []
+}

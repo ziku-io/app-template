@@ -1,0 +1,6 @@
+{
+  "id": "assignments",
+  "title": "Assignments",
+  "description": "Who owns or works a record, and the visibility rule that follows. Drop <Assignees entityType entityId /> onto a detail page and use visibility.ts to scope other modules' lists.",
+  "requires": []
+}

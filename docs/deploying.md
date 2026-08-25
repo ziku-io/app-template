@@ -17,12 +17,12 @@ to GitHub Packages, removes this step for good.
 
 ## Environment
 
-| Key | Notes |
-|---|---|
-| `DATABASE_URL` | One database per app. `pnpm setup` names it after the app. |
-| `BETTER_AUTH_SECRET` | `openssl rand -base64 32`. Changing it signs everyone out. |
-| `APP_URL` | The public origin. Must match, or the CSRF origin check refuses writes. |
-| `PORT` | Defaults to 3000. |
+| Key                  | Notes                                                                   |
+| -------------------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL`       | One database per app. `pnpm setup` names it after the app.              |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 32`. Changing it signs everyone out.              |
+| `APP_URL`            | The public origin. Must match, or the CSRF origin check refuses writes. |
+| `PORT`               | Defaults to 3000.                                                       |
 
 Modules add their own; `pnpm setup` writes them into `.env` with defaults and a
 comment each.

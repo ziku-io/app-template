@@ -35,9 +35,16 @@ boot. Every route is in the generated OpenAPI spec.
 
 | Module | What it gives you |
 |---|---|
-| `projects` | Example CRUD resource: table with filters, saved views, create dialog. A pattern to copy or delete. |
-| `files` | Upload, list, download and delete attachments. Local disk by default, scoped to any record. |
-| `activity` | `<ActivityFeed entityType entityId />` — a note and event timeline to drop on a detail page. |
+| `projects` | Reference CRUD resource, and the worked example of every convention. |
+| `tasks` | Assignable work items with one level of subtasks, `:complete` / `:reopen`. |
+| `files` | Upload, list, download and delete attachments, scoped to any record. |
+| `folders` | A nested tree over `files`, with cycle-safe moves and subtree delete. |
+| `contacts` | Named people attached to any record, with one primary each. |
+| `assignments` | Who owns or works a record, plus the visibility rule that follows. |
+| `activities` | `<ActivityFeed entityType entityId />` — note and event timeline. |
+| `tickets` | Threaded request queue with staff-only internal notes. |
+| `docrequests` | Ask someone for a specific document; the destination is fixed by the request. |
+| `intake` | Hardened public form endpoint: honeypot, rate limit, hashed IPs. |
 | `users` | Admin-only user list with role changes. |
 
 ```bash
@@ -50,9 +57,11 @@ pnpm remove:module files     # delete one
 
 | | |
 |---|---|
+| [rest-standards.md](docs/rest-standards.md) | The twelve rules every endpoint follows, and why |
 | [architecture.md](docs/architecture.md) | How the pieces fit, request lifecycle, where state lives |
 | [modules.md](docs/modules.md) | The module contract and how to write one |
-| [api.md](docs/api.md) | List/error conventions, status codes, documenting a route |
+| [api.md](docs/api.md) | Applying the standards when writing a route |
+| [testing.md](docs/testing.md) | The two suites and what each is for |
 | [deploying.md](docs/deploying.md) | Docker, env, database per app, uploads, first admin |
 
 The live API reference is at `/api/docs`, generated from the routes actually
@@ -65,6 +74,7 @@ pnpm dev            # client + API, with the module registries synced first
 pnpm build          # static client + bundled server into dist/
 pnpm start          # run the built server
 pnpm typecheck
+pnpm test           # unit tests over the conventions layer
 pnpm format
 ./smoke.sh http://localhost:3000   # core flows + every installed module
 pnpm db:generate    # migration from the current schema

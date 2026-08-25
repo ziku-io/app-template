@@ -2,5 +2,8 @@
 //   pnpm dlx auth@1.7.1 generate --config src/server/auth.ts --output src/server/db/auth-schema.ts
 export * from "./auth-schema"
 
+// Cross-cutting tables: idempotency, API keys.
+export * from "./core-schema"
+
 // Every installed module's tables, written by `pnpm modules:sync`.
 export * from "@/modules/schema.generated"

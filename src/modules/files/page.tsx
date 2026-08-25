@@ -8,7 +8,7 @@ import {
 } from "@phosphor-icons/react"
 import { Button, DataTable, EmptyState, PageHeader, toast, type DataTableColumn } from "@ziku/ui"
 
-import { del, get, type Json } from "@/client/lib/api"
+import { API_BASE, del, get, type Json } from "@/client/lib/api"
 
 import type { FileRecord as FileRow } from "./schema"
 
@@ -40,7 +40,7 @@ export function FilesPage() {
       const body = new FormData()
       body.append("file", file)
       // Not the shared `post` helper: FormData sets its own content type.
-      const res = await fetch("/api/files", { method: "POST", body })
+      const res = await fetch(`${API_BASE}/files`, { method: "POST", body })
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Upload failed")
       return res.json()
     },
@@ -78,7 +78,7 @@ export function FilesPage() {
       render: (r) => (
         <div className="flex justify-end gap-1">
           <Button variant="ghost" size="icon-sm" asChild aria-label={`Download ${r.name}`}>
-            <a href={`/api/files/${r.id}/download`}>
+            <a href={`${API_BASE}/files/${r.id}/content`}>
               <DownloadSimpleIcon />
             </a>
           </Button>

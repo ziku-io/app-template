@@ -5,6 +5,8 @@ import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { Hono } from "hono"
 import { openAPIRouteHandler } from "hono-openapi"
+
+import { API_VERSION, BadRequest } from "./rest"
 import { z } from "zod"
 
 import { serverModules } from "@/modules/server.generated"
@@ -31,8 +33,12 @@ app.get(
 // session, password reset.
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
 
-app.get(
-  "/api/me",
+// Everything versioned lives here. `/api/health` stays outside on purpose:
+// a probe should not break when the API version moves.
+const v1 = new Hono()
+
+v1.get(
+  "/me",
   describe({
     tag: "core",
     summary: "The signed-in user",
@@ -47,8 +53,13 @@ app.get(
   (c) => c.json(c.get("user")),
 )
 
-// Installed modules, in whatever order the registry lists them.
-for (const m of serverModules) app.route(m.basePath, m.routes)
+for (const m of serverModules) {
+  v1.route(m.basePath, m.routes)
+  // Cross-referenced sub-collections, e.g. /api/v1/projects/{id}/files.
+  for (const mount of m.extraMounts ?? []) v1.route(mount.path, mount.routes)
+}
+
+app.route(`/api/${API_VERSION}`, v1)
 
 // ── Documentation ───────────────────────────────────────────────────
 // Generated from the routes actually mounted, so the spec always matches the
@@ -62,8 +73,10 @@ app.get(
         title: `${process.env.APP_NAME ?? "App"} API`,
         version: "1.0.0",
         description:
-          "Every list endpoint takes `q`, `sort`, `limit` and `offset`, and answers `{ rows, total }`.\n\n" +
-          "Sessions are cookie-based. Sign in through `/api/auth/*` (Better Auth) first.",
+          "Lists are cursor-paged: `?pageSize=&pageToken=`, answering `{ rows, nextPageToken }`.\n\n" +
+          "Sort with `?sort_by=name` (`-` prefixes descending) and filter with `?filter=status:Lead,Active`.\n\n" +
+          "Deletes are soft; `?includeDeleted=true` brings the rows back into a list.\n\n" +
+          "Sign in through `/api/auth/*` (Better Auth) for a cookie session, or sign requests with an API key.",
       },
       servers: [{ url: process.env.APP_URL ?? "http://localhost:3000", description: "This app" }],
     },
@@ -81,6 +94,18 @@ app.use("/favicon.ico", assets)
 // Read once: the SPA shell is the fallback for every non-API path, so client
 // routes survive a hard refresh.
 const shell = await readFile("./dist/client/index.html", "utf8").catch(() => null)
+
+/**
+ * One place where a thrown error becomes a response. Without this a guard that
+ * throws BadRequest would surface as a 500, which reads as "our fault" when it
+ * is the request that is wrong.
+ */
+app.onError((error, c) => {
+  if (error instanceof BadRequest) return c.json({ error: error.message }, 400)
+  // Anything unrecognised is genuinely ours: log it, and never leak the detail.
+  console.error("[unhandled]", error)
+  return c.json({ error: "Internal error" }, 500)
+})
 
 app.notFound((c) => {
   if (c.req.path.startsWith("/api/")) return c.json({ error: "Not found" }, 404)
