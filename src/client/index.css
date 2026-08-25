@@ -1,0 +1,4 @@
+/* The design system ships the Tailwind import, the GitHub-flavoured tokens and
+   the dark default. Add app-specific utilities below it. */
+@import "@ziku/ui/styles.css";
+@source "../../node_modules/@ziku/ui/dist";
