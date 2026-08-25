@@ -1,11 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
-import {
-  AuthLayout,
-  ForgotPasswordForm,
-  LoginForm,
-  RegisterForm,
-} from "@ziku/ui"
+import { AuthLayout, ForgotPasswordForm, LoginForm, RegisterForm } from "@ziku/ui"
 
 import { authClient } from "../lib/auth-client"
 

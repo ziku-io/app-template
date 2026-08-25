@@ -15,7 +15,7 @@ export const files = pgTable(
     uploadedBy: text("uploaded_by"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [index("files_entity_idx").on(t.entityType, t.entityId)]
+  (t) => [index("files_entity_idx").on(t.entityType, t.entityId)],
 )
 
 export type FileRecord = typeof files.$inferSelect

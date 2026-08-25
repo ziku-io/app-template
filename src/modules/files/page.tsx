@@ -1,14 +1,12 @@
 import { useRef } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { DownloadSimpleIcon, PaperclipIcon, TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react"
 import {
-  Button,
-  DataTable,
-  EmptyState,
-  PageHeader,
-  toast,
-  type DataTableColumn,
-} from "@ziku/ui"
+  DownloadSimpleIcon,
+  PaperclipIcon,
+  TrashIcon,
+  UploadSimpleIcon,
+} from "@phosphor-icons/react"
+import { Button, DataTable, EmptyState, PageHeader, toast, type DataTableColumn } from "@ziku/ui"
 
 import { del, get, type Json } from "@/client/lib/api"
 

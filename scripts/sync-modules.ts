@@ -39,7 +39,7 @@ export async function sync() {
     banner +
       `import type { ServerModule } from "./types"\n` +
       server.map((m) => `import ${m.id} from "./${m.id}/server"`).join("\n") +
-      `\n\nexport const serverModules: ServerModule[] = [${server.map((m) => m.id).join(", ")}]\n`
+      `\n\nexport const serverModules: ServerModule[] = [${server.map((m) => m.id).join(", ")}]\n`,
   )
 
   await writeFile(
@@ -47,13 +47,13 @@ export async function sync() {
     banner +
       `import type { ClientModule } from "./types"\n` +
       client.map((m) => `import ${m.id} from "./${m.id}/client"`).join("\n") +
-      `\n\nexport const clientModules: ClientModule[] = [${client.map((m) => m.id).join(", ")}]\n`
+      `\n\nexport const clientModules: ClientModule[] = [${client.map((m) => m.id).join(", ")}]\n`,
   )
 
   // drizzle-kit reads this through src/server/db/schema.ts.
   await writeFile(
     path.join(MODULES, "schema.generated.ts"),
-    banner + schema.map((m) => `export * from "./${m.id}/schema"`).join("\n") + "\n"
+    banner + schema.map((m) => `export * from "./${m.id}/schema"`).join("\n") + "\n",
   )
 
   return { modules, server, client, schema }
@@ -61,5 +61,7 @@ export async function sync() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { modules } = await sync()
-  console.log(`synced ${modules.length} module(s): ${modules.map((m) => m.id).join(", ") || "none"}`)
+  console.log(
+    `synced ${modules.length} module(s): ${modules.map((m) => m.id).join(", ") || "none"}`,
+  )
 }

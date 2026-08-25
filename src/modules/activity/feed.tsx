@@ -92,9 +92,7 @@ export function ActivityFeed({
             </Button>
           </li>
         ))}
-        {data?.rows.length === 0 && (
-          <li className="text-sm text-muted-foreground">Nothing yet.</li>
-        )}
+        {data?.rows.length === 0 && <li className="text-sm text-muted-foreground">Nothing yet.</li>}
       </ol>
     </div>
   )

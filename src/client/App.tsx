@@ -29,7 +29,7 @@ const GROUP_ORDER = ["Workspace", "Account"]
 /** Sidebar groups, built from the core plus every installed module. */
 function buildNav(role: string): NavGroup[] {
   const items = [...CORE_NAV, ...clientModules.flatMap((m) => m.nav ?? [])].filter(
-    (i) => !i.roles || i.roles.includes(role)
+    (i) => !i.roles || i.roles.includes(role),
   )
   const groups = [...new Set([...GROUP_ORDER, ...items.map((i) => i.group ?? "Workspace")])]
   return groups
@@ -46,7 +46,7 @@ export function App() {
   const nav = useMemo(() => buildNav(role), [role])
   const moduleRoutes = useMemo<ModuleRoute[]>(
     () => clientModules.flatMap((m) => m.routes).filter((r) => !r.roles || r.roles.includes(role)),
-    [role]
+    [role],
   )
 
   const isAuthRoute = ["/login", "/register", "/forgot-password"].includes(location.pathname)
@@ -119,7 +119,10 @@ export function App() {
         {moduleRoutes.map((r) => (
           <Route key={r.path} path={r.path} element={r.element} />
         ))}
-        <Route path="*" element={<PageHeader title="Not found" description="No page at this address." />} />
+        <Route
+          path="*"
+          element={<PageHeader title="Not found" description="No page at this address." />}
+        />
       </Routes>
       <Toaster />
     </AppShell>

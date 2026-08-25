@@ -1,6 +1,12 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { BuildingsIcon, CircleDashedIcon, CurrencyEurIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react"
+import {
+  BuildingsIcon,
+  CircleDashedIcon,
+  CurrencyEurIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@phosphor-icons/react"
 import {
   Badge,
   Button,
@@ -153,7 +159,12 @@ function NewProjectDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   pending: boolean
-  onSubmit: (body: { name: string; client: string; status: Project["status"]; budget: number }) => void
+  onSubmit: (body: {
+    name: string
+    client: string
+    status: Project["status"]
+    budget: number
+  }) => void
 }) {
   const [status, setStatus] = useState<Project["status"]>("Lead")
   return (

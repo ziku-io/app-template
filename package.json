@@ -22,16 +22,21 @@
     "setup": "tsx scripts/setup.ts",
     "predev": "tsx scripts/sync-modules.ts",
     "prebuild": "tsx scripts/sync-modules.ts",
-    "remove:module": "tsx scripts/remove-module.ts"
+    "remove:module": "tsx scripts/remove-module.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/*.ts\""
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
     "@phosphor-icons/react": "^2.1.10",
+    "@scalar/hono-api-reference": "^0.11.16",
     "@tanstack/react-query": "^5.102.3",
     "@ziku/ui": "github:ziku-io/design-system",
     "better-auth": "^1.7.1",
     "drizzle-orm": "^0.45.2",
+    "drizzle-zod": "^0.8.3",
     "hono": "^4.13.4",
+    "hono-openapi": "^1.3.1",
+    "openapi-types": "^12.1.3",
     "postgres": "^3.4.9",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -39,7 +44,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@hono/standard-validator": "^0.4.0",
+    "@standard-community/standard-json": "^0.3.5",
+    "@standard-community/standard-openapi": "^0.2.9",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^26.3.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
@@ -47,6 +56,7 @@
     "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
     "esbuild": "^0.28.2",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",

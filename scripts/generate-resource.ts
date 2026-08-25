@@ -31,16 +31,17 @@ if (existsSync(dir)) {
 }
 
 const files: Record<string, string> = {
-  "module.json": JSON.stringify(
-    {
-      id: plural,
-      title: Plural,
-      description: `${Plural} resource.`,
-      requires: [],
-    },
-    null,
-    2
-  ) + "\n",
+  "module.json":
+    JSON.stringify(
+      {
+        id: plural,
+        title: Plural,
+        description: `${Plural} resource.`,
+        requires: [],
+      },
+      null,
+      2,
+    ) + "\n",
 
   "schema.ts": `import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 

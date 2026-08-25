@@ -14,7 +14,7 @@ export const activities = pgTable(
     userName: text("user_name"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [index("activities_entity_idx").on(t.entityType, t.entityId, t.createdAt)]
+  (t) => [index("activities_entity_idx").on(t.entityType, t.entityId, t.createdAt)],
 )
 
 export type Activity = typeof activities.$inferSelect
