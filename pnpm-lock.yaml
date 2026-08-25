@@ -22,7 +22,7 @@ importers:
         version: 5.102.3(react@19.2.8)
       '@ziku/ui':
         specifier: github:ziku-io/design-system
-        version: git+https://git@github.com:ziku-io/design-system.git#627c8214d023984dfb2b7480dddcda82a044ab05(@standard-schema/spec@1.1.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
+        version: https://codeload.github.com/ziku-io/design-system/tar.gz/0cb689261207918a4d8e49ea38da62483eb1944e(@standard-schema/spec@1.1.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
       better-auth:
         specifier: ^1.7.1
         version: 1.7.1(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(kysely@0.29.5)(postgres@3.4.9))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@types/node@26.3.0)(vite@8.2.2(@types/node@26.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)))
@@ -1855,8 +1855,8 @@ packages:
   '@vitest/utils@4.1.11':
     resolution: {integrity: sha512-zTCVGpyFsGWBhllOyKlTw/vnr6D9qxsfSDyfbyZmTyjHw5N/VuvzHpHoQjm2ZJzn4RJgx5w4r7V0er69CmLgPQ==}
 
-  '@ziku/ui@git+https://git@github.com:ziku-io/design-system.git#627c8214d023984dfb2b7480dddcda82a044ab05':
-    resolution: {commit: 627c8214d023984dfb2b7480dddcda82a044ab05, repo: git@github.com:ziku-io/design-system.git, type: git}
+  '@ziku/ui@https://codeload.github.com/ziku-io/design-system/tar.gz/0cb689261207918a4d8e49ea38da62483eb1944e':
+    resolution: {tarball: https://codeload.github.com/ziku-io/design-system/tar.gz/0cb689261207918a4d8e49ea38da62483eb1944e}
     version: 0.1.0
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -4079,7 +4079,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.1
 
-  '@ziku/ui@git+https://git@github.com:ziku-io/design-system.git#627c8214d023984dfb2b7480dddcda82a044ab05(@standard-schema/spec@1.1.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)':
+  '@ziku/ui@https://codeload.github.com/ziku-io/design-system/tar.gz/0cb689261207918a4d8e49ea38da62483eb1944e(@standard-schema/spec@1.1.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)':
     dependencies:
       '@hookform/resolvers': 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.86.0(react@19.2.8))(zod@4.4.3)
       '@phosphor-icons/react': 2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

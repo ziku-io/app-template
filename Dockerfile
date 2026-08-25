@@ -1,16 +1,16 @@
-# @ziku/ui is a private git dependency, so the install needs SSH.
-# Build with:  docker build --ssh default -t app .
+# @ziku/ui is a public git dependency, so a plain `docker build` is enough.
 FROM node:22-alpine AS build
-RUN apk add --no-cache git openssh-client && \
-    mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 RUN corepack enable
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=ssh pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+
+# A fresh clone of the template has no migrations yet; a generated app does.
+# The directory has to exist either way for the runtime COPY below.
+RUN mkdir -p migrations && pnpm build
 
 FROM node:22-alpine AS runtime
 RUN corepack enable
@@ -19,7 +19,7 @@ ENV NODE_ENV=production
 
 COPY package.json pnpm-lock.yaml ./
 # Only what the server needs at runtime; the client is already static.
-RUN --mount=type=ssh pnpm install --prod --frozen-lockfile --ignore-scripts
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/migrations ./migrations

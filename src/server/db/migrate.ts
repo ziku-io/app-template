@@ -8,9 +8,11 @@ import postgres from "postgres"
 export async function runMigrations(url = process.env.DATABASE_URL) {
   if (!url) throw new Error("DATABASE_URL is not set")
   // A fresh app has none until `pnpm db:generate` runs, and the template ships
-  // none on purpose: they would create tables for modules you deleted.
-  if (!existsSync("./migrations")) {
-    console.warn("no migrations/ — run `pnpm db:generate` to create the first one")
+  // none on purpose: they would create tables for modules you deleted. Check
+  // the journal, not the directory — the image creates an empty one, and
+  // drizzle throws on a folder with no journal in it.
+  if (!existsSync("./migrations/meta/_journal.json")) {
+    console.warn("no migrations yet — run `pnpm db:generate` to create the first one")
     return
   }
   const client = postgres(url, { max: 1 })

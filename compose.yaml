@@ -15,8 +15,6 @@ services:
   app:
     build:
       context: .
-      # Needs `docker compose build --ssh default` for the private @ziku/ui dep.
-      ssh: ["default"]
     environment:
       DATABASE_URL: postgres://app:app@db:5432/app
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}

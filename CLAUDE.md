@@ -89,8 +89,9 @@ pnpm dlx auth@1.7.1 generate --config src/server/auth.ts --output src/server/db/
 **Better Auth rejects state-changing requests whose `Origin` does not match
 `APP_URL`.** Browsers send it; scripts must (`smoke.sh` does).
 
-**`@ziku/ui` is a private git dependency**, so Docker builds need
-`docker build --ssh default`.
+**`@ziku/ui` is a public git dependency** (`github:ziku-io/design-system`), so
+Docker builds need nothing special. Its browsable docs are at
+https://ziku-io.github.io/design-system/.
 
 **Rate limits are per process and env-tunable** (`RATE_LIMIT_READ` etc.). The
 intake smoke check deliberately exhausts the public budget, so back-to-back runs

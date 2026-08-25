@@ -4,16 +4,13 @@ One container per client app, plus a Postgres each app has its own database in.
 
 ## Build
 
-`@ziku/ui` is a private git dependency, so the image build needs SSH:
-
 ```bash
-docker build --ssh default -t acme-portal .
-docker compose build --ssh default
+docker build -t acme-portal .
+docker compose build
 ```
 
-On Coolify or Dokploy: add a deploy key for `ziku-io/design-system` and enable
-SSH forwarding for the build. Making the design system public, or publishing it
-to GitHub Packages, removes this step for good.
+`@ziku/ui` is a public git dependency, so the build needs nothing but network
+access — no deploy key, no SSH forwarding. Coolify and Dokploy build it as-is.
 
 ## Environment
 
