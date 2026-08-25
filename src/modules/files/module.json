@@ -1,0 +1,10 @@
+{
+  "id": "files",
+  "title": "Files",
+  "description": "Upload, list and download attachments. Stored on local disk by default; point UPLOAD_DIR at a mounted volume.",
+  "requires": [],
+  "env": [
+    { "key": "UPLOAD_DIR", "default": "./data/uploads", "description": "Where uploaded files are written" },
+    { "key": "MAX_UPLOAD_MB", "default": "25", "description": "Rejected above this size" }
+  ]
+}

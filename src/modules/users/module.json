@@ -1,0 +1,6 @@
+{
+  "id": "users",
+  "title": "User administration",
+  "description": "Admin-only page listing everyone, with role changes. Gate your own routes with requireAdmin.",
+  "requires": []
+}

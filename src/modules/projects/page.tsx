@@ -22,7 +22,7 @@ import {
   type DataTableColumn,
 } from "@ziku/ui"
 
-import { del, get, post } from "../lib/api"
+import { del, get, post } from "@/client/lib/api"
 
 const STATUSES = ["Lead", "Active", "On hold", "Done"] as const
 

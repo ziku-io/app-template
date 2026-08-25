@@ -1,0 +1,6 @@
+{
+  "id": "projects",
+  "title": "Projects",
+  "description": "Example CRUD resource: table, filters, saved views and a create dialog. Keep it as a starting point or delete it.",
+  "requires": []
+}

@@ -1,11 +1,16 @@
 #!/usr/bin/env tsx
 /**
- * Stamps a CRUD resource: schema table, API routes, and a list page wired to
- * DataTable. Run `pnpm gen:resource invoice`, then `pnpm db:generate` for the
- * migration. Everything it writes is meant to be edited afterwards.
+ * Stamps a new module for a CRUD resource: manifest, table, API routes and a
+ * list page wired to DataTable. It appears in the sidebar as soon as the
+ * registries re-sync, which this does for you.
+ *
+ *   pnpm gen:resource invoice
  */
-import { readFile, writeFile } from "node:fs/promises"
+import { mkdir, writeFile } from "node:fs/promises"
 import { existsSync } from "node:fs"
+import path from "node:path"
+
+import { sync } from "./sync-modules"
 
 const raw = process.argv[2]
 if (!raw) {
@@ -18,17 +23,27 @@ const plural = singular.endsWith("s") ? `${singular}es` : `${singular}s`
 const Pascal = singular[0].toUpperCase() + singular.slice(1)
 const Plural = plural[0].toUpperCase() + plural.slice(1)
 
-const routesFile = `src/server/routes/${plural}.ts`
-const pageFile = `src/client/pages/${plural}.tsx`
-
-for (const f of [routesFile, pageFile]) {
-  if (existsSync(f)) {
-    console.error(`${f} already exists — pick another name or delete it first.`)
-    process.exit(1)
-  }
+const ROOT = path.resolve(import.meta.dirname, "..")
+const dir = path.join(ROOT, "src/modules", plural)
+if (existsSync(dir)) {
+  console.error(`src/modules/${plural} already exists — pick another name or remove it first.`)
+  process.exit(1)
 }
 
-const table = `
+const files: Record<string, string> = {
+  "module.json": JSON.stringify(
+    {
+      id: plural,
+      title: Plural,
+      description: `${Plural} resource.`,
+      requires: [],
+    },
+    null,
+    2
+  ) + "\n",
+
+  "schema.ts": `import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+
 export const ${plural} = pgTable("${plural}", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -37,21 +52,21 @@ export const ${plural} = pgTable("${plural}", {
 })
 
 export type ${Pascal} = typeof ${plural}.$inferSelect
-export type New${Pascal} = typeof ${plural}.$inferInsert
-`
+`,
 
-const routes = `import { Hono } from "hono"
+  "routes.ts": `import { Hono } from "hono"
 import { and, asc, count, desc, eq, ilike, type SQL } from "drizzle-orm"
 import { z } from "zod"
 
-import { db } from "../db"
-import { ${plural} } from "../db/schema"
-import { requireAuth } from "../middleware"
+import { db } from "@/server/db"
+import { requireAuth } from "@/server/middleware"
+
+import { ${plural} } from "./schema"
 
 const columns = { name: ${plural}.name, createdAt: ${plural}.createdAt }
 const body = z.object({ name: z.string().min(1) })
 
-export const ${singular}Routes = new Hono()
+export const routes = new Hono()
   .use("*", requireAuth)
 
   .get("/", async (c) => {
@@ -59,14 +74,14 @@ export const ${singular}Routes = new Hono()
     const where: SQL[] = []
     if (q) where.push(ilike(${plural}.name, \`%\${q}%\`))
 
-    const desc_ = sort?.startsWith("-")
-    const key = (desc_ ? sort!.slice(1) : sort) as keyof typeof columns
+    const descending = sort?.startsWith("-")
+    const key = (descending ? sort!.slice(1) : sort) as keyof typeof columns
     const column = columns[key] ?? ${plural}.createdAt
 
     const filter = where.length ? and(...where) : undefined
     const [rows, [total]] = await Promise.all([
       db.select().from(${plural}).where(filter)
-        .orderBy(desc_ ? desc(column) : asc(column))
+        .orderBy(descending ? desc(column) : asc(column))
         .limit(Math.min(Number(limit) || 500, 1000))
         .offset(Number(offset) || 0),
       db.select({ n: count() }).from(${plural}).where(filter),
@@ -94,19 +109,23 @@ export const ${singular}Routes = new Hono()
     const [row] = await db.delete(${plural}).where(eq(${plural}.id, c.req.param("id"))).returning()
     return row ? c.body(null, 204) : c.json({ error: "Not found" }, 404)
   })
-`
+`,
 
-const page = `import { useQuery } from "@tanstack/react-query"
-import { Button, DataTable, PageHeader, type DataTableColumn } from "@ziku/ui"
+  "server.ts": `import type { ServerModule } from "../types"
+import { routes } from "./routes"
+
+export default { id: "${plural}", basePath: "/api/${plural}", routes } satisfies ServerModule
+`,
+
+  "page.tsx": `import { useQuery } from "@tanstack/react-query"
 import { PlusIcon } from "@phosphor-icons/react"
+import { Button, DataTable, PageHeader, type DataTableColumn } from "@ziku/ui"
 
-import { get } from "../lib/api"
+import { get, type Json } from "@/client/lib/api"
 
-interface ${Pascal} {
-  id: string
-  name: string
-  createdAt: string
-}
+import type { ${Pascal} as ${Pascal}Row } from "./schema"
+
+type ${Pascal} = Json<${Pascal}Row>
 
 const columns: DataTableColumn<${Pascal}>[] = [
   { key: "name", header: "Name", className: "font-medium" },
@@ -121,10 +140,7 @@ export function ${Plural}Page() {
 
   return (
     <>
-      <PageHeader
-        title="${Plural}"
-        actions={<Button><PlusIcon /> New ${singular}</Button>}
-      />
+      <PageHeader title="${Plural}" actions={<Button><PlusIcon /> New ${singular}</Button>} />
       <DataTable
         columns={columns}
         data={data?.rows ?? []}
@@ -135,20 +151,30 @@ export function ${Plural}Page() {
     </>
   )
 }
-`
+`,
 
-await writeFile(routesFile, routes)
-await writeFile(pageFile, page)
+  "client.tsx": `import { ListBulletsIcon } from "@phosphor-icons/react"
 
-const schemaPath = "src/server/db/schema.ts"
-await writeFile(schemaPath, (await readFile(schemaPath, "utf8")).trimEnd() + "\n" + table)
+import type { ClientModule } from "../types"
+import { ${Plural}Page } from "./page"
 
-console.log(`created:
-  ${schemaPath}   (+ ${plural} table)
-  ${routesFile}
-  ${pageFile}
+export default {
+  id: "${plural}",
+  nav: [{ title: "${Plural}", href: "/${plural}", icon: ListBulletsIcon, group: "Workspace" }],
+  routes: [{ path: "/${plural}", element: <${Plural}Page /> }],
+} satisfies ClientModule
+`,
+}
+
+await mkdir(dir, { recursive: true })
+for (const [file, contents] of Object.entries(files)) {
+  await writeFile(path.join(dir, file), contents)
+}
+await sync()
+
+console.log(`created src/modules/${plural}/ and synced the registries
+
+it is already mounted at /api/${plural} and linked in the sidebar.
 
 next:
-  1. mount it:   app.route("/api/${plural}", ${singular}Routes)   in src/server/index.ts
-  2. route it:   <Route path="/${plural}" element={<${Plural}Page />} />   in src/client/App.tsx
-  3. migrate:    pnpm db:generate && pnpm db:migrate`)
+  pnpm db:generate && pnpm db:migrate`)

@@ -2,9 +2,10 @@ import { Hono } from "hono"
 import { and, asc, count, desc, eq, ilike, inArray, or, type SQL } from "drizzle-orm"
 import { z } from "zod"
 
-import { db } from "../db"
-import { PROJECT_STATUSES, projects } from "../db/schema"
-import { requireAuth } from "../middleware"
+import { db } from "@/server/db"
+import { requireAuth } from "@/server/middleware"
+
+import { PROJECT_STATUSES, projects } from "./schema"
 
 const columns = { name: projects.name, client: projects.client, status: projects.status, budget: projects.budget, createdAt: projects.createdAt }
 
@@ -15,7 +16,7 @@ const body = z.object({
   budget: z.number().int().min(0),
 })
 
-export const projectRoutes = new Hono()
+export const routes = new Hono()
   .use("*", requireAuth)
 
   /** List. `?q=` searches, `?sort=name` / `?sort=-budget` orders, `?status=a,b`

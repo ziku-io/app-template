@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# End-to-end check of the flows every app inherits: register, session, CRUD,
-# query params, validation, sign-out. Run against a booted server:
+# End-to-end check of the flows every app inherits, plus whatever each
+# installed module contributes. Run against a booted server:
 #   ./smoke.sh http://localhost:3000
 set -euo pipefail
+cd "$(dirname "$0")"
 
 BASE="${1:-http://localhost:3000}"
 JAR=$(mktemp)
@@ -21,28 +22,26 @@ code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 # Built with printf: inline braces would be brace-expanded into separate args.
 credentials=$(printf '{"name":"Smoke","email":"%s","password":"%s"}' "$EMAIL" "$PASS")
 wrong_password=$(printf '{"email":"%s","password":"nope"}' "$EMAIL")
-new_project='{"name":"Smoke test","client":"Acme","status":"Lead","budget":100}'
-bad_project='{"name":"","client":"x","status":"Nope","budget":-1}'
 
 echo "smoke: $BASE"
-check "health"             200 "$(code "$BASE/api/health")"
-check "projects need auth" 401 "$(code "$BASE/api/projects")"
-check "register"           200 "$(code -c "$JAR" "${H[@]}" -X POST "$BASE/api/auth/sign-up/email" -d "$credentials")"
-check "session"            200 "$(code -b "$JAR" "$BASE/api/me")"
-check "create"             201 "$(code -b "$JAR" "${H[@]}" -X POST "$BASE/api/projects" -d "$new_project")"
-check "reject bad body"    422 "$(code -b "$JAR" "${H[@]}" -X POST "$BASE/api/projects" -d "$bad_project")"
-check "list"               200 "$(code -b "$JAR" "$BASE/api/projects")"
-check "search"             200 "$(code -b "$JAR" "$BASE/api/projects?q=smoke")"
-check "sort"               200 "$(code -b "$JAR" "$BASE/api/projects?sort=-budget")"
-check "filter"             200 "$(code -b "$JAR" "$BASE/api/projects?status=Lead")"
+check "health"          200 "$(code "$BASE/api/health")"
+check "guarded route"   401 "$(code "$BASE/api/me")"
+check "register"        200 "$(code -c "$JAR" "${H[@]}" -X POST "$BASE/api/auth/sign-up/email" -d "$credentials")"
+check "session"         200 "$(code -b "$JAR" "$BASE/api/me")"
+check "spa fallback"    200 "$(code "$BASE/")"
 
-id=$(curl -s -b "$JAR" "$BASE/api/projects?q=Smoke" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -1)
-check "delete"             204 "$(code -b "$JAR" "${H[@]}" -X DELETE "$BASE/api/projects/$id")"
-check "delete is gone"     404 "$(code -b "$JAR" "${H[@]}" -X DELETE "$BASE/api/projects/$id")"
-check "bad password"       401 "$(code "${H[@]}" -X POST "$BASE/api/auth/sign-in/email" -d "$wrong_password")"
-check "sign out"           200 "$(code -b "$JAR" -c "$JAR" "${H[@]}" -X POST "$BASE/api/auth/sign-out" -d '{}')"
-check "session is gone"    401 "$(code -b "$JAR" "$BASE/api/me")"
-check "spa fallback"       200 "$(code "$BASE/projects")"
+# Modules run here, while the smoke account is signed in. Each contributes its
+# own checks and inherits check(), code(), $BASE, $JAR and $H.
+for module in src/modules/*/smoke.sh; do
+  [ -e "$module" ] || continue
+  echo "  -- $(basename "$(dirname "$module")")"
+  # shellcheck disable=SC1090
+  . "$module"
+done
+
+check "bad password"    401 "$(code "${H[@]}" -X POST "$BASE/api/auth/sign-in/email" -d "$wrong_password")"
+check "sign out"        200 "$(code -b "$JAR" -c "$JAR" "${H[@]}" -X POST "$BASE/api/auth/sign-out" -d '{}')"
+check "session is gone" 401 "$(code -b "$JAR" "$BASE/api/me")"
 
 rm -f "$JAR"
 [ "$fail" = 0 ] && echo "all good" || { echo "FAILED"; exit 1; }

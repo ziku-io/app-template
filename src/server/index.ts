@@ -4,10 +4,11 @@ import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { Hono } from "hono"
 
+import { serverModules } from "@/modules/server.generated"
+
 import { auth } from "./auth"
 import { runMigrations } from "./db/migrate"
 import { requireAuth } from "./middleware"
-import { projectRoutes } from "./routes/projects"
 
 const app = new Hono()
 
@@ -18,7 +19,9 @@ app.get("/api/health", (c) => c.json({ ok: true }))
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
 
 app.get("/api/me", requireAuth, (c) => c.json(c.get("user")))
-app.route("/api/projects", projectRoutes)
+
+// Installed modules, in whatever order the registry lists them.
+for (const m of serverModules) app.route(m.basePath, m.routes)
 
 // One process serves the API and the built client, so a client app is one
 // container. In dev, Vite serves the client and proxies /api here instead.
@@ -40,7 +43,8 @@ const port = Number(process.env.PORT) || 3000
 
 await runMigrations()
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`listening on http://localhost:${info.port}`)
+  console.log(
+    `listening on http://localhost:${info.port}` +
+      ` — modules: ${serverModules.map((m) => m.id).join(", ") || "none"}`
+  )
 })
-
-export type AppType = typeof app

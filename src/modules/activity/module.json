@@ -1,0 +1,6 @@
+{
+  "id": "activity",
+  "title": "Activity",
+  "description": "Timeline of notes and events against any record. Drop <ActivityFeed entityType entityId /> onto a detail page.",
+  "requires": []
+}

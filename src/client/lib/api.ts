@@ -1,3 +1,15 @@
+/**
+ * A row as it arrives over the wire. Drizzle types say `Date`, but JSON has no
+ * date type, so every timestamp reaches the client as a string.
+ */
+export type Json<T> = {
+  [K in keyof T]: T[K] extends Date
+    ? string
+    : T[K] extends Date | null
+      ? string | null
+      : T[K]
+}
+
 /** Thin fetch wrapper. Cookies carry the session, so nothing to attach. */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, {
