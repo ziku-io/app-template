@@ -70,6 +70,36 @@ pnpm db:generate && pnpm db:migrate   # after anything with tables
 
 Full contract in [docs/modules.md](docs/modules.md).
 
+## Releasing
+
+A tag records which version of the template a client app was generated from.
+
+```bash
+pnpm release patch --dry-run
+pnpm release minor
+```
+
+Same guards as the design system: main only, clean tree, in sync with origin,
+version above the highest tag and not below package.json, tag not already taken.
+The tag triggers a workflow that re-verifies and publishes the GitHub Release.
+
+Start a client app from a specific version:
+
+```bash
+git clone --branch v0.1.0 git@github.com:ziku-io/app-template.git acme-portal
+```
+
+## Upgrading @ziku/ui
+
+Pinned by tag, so it never moves under an app:
+
+```jsonc
+"@ziku/ui": "github:ziku-io/design-system#v0.1.0"
+```
+
+Bump the tag in package.json, then `pnpm update @ziku/ui`. `pnpm update` alone
+will not move a pinned tag, which is the point.
+
 ## Gotchas
 
 **The template ships no `migrations/`.** They would create tables for modules
@@ -89,8 +119,9 @@ pnpm dlx auth@1.7.1 generate --config src/server/auth.ts --output src/server/db/
 **Better Auth rejects state-changing requests whose `Origin` does not match
 `APP_URL`.** Browsers send it; scripts must (`smoke.sh` does).
 
-**`@ziku/ui` is a public git dependency** (`github:ziku-io/design-system`), so
-Docker builds need nothing special. Its browsable docs are at
+**`@ziku/ui` is a public git dependency pinned to a tag**, and it ships
+prebuilt, so installs are a tarball fetch with no build step and Docker needs
+nothing special. Its browsable docs are at
 https://ziku-io.github.io/design-system/.
 
 **Rate limits are per process and env-tunable** (`RATE_LIMIT_READ` etc.). The

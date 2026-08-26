@@ -9,7 +9,7 @@ One process serves the API and the built client, so a client app is one containe
 ## One-shot a new app
 
 ```bash
-git clone git@github.com:ziku-io/app-template.git acme-portal && cd acme-portal
+git clone --branch v0.1.0 git@github.com:ziku-io/app-template.git acme-portal && cd acme-portal
 rm -rf .git && git init
 pnpm install
 pnpm setup --name acme-portal --modules projects,files

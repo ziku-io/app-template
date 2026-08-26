@@ -23,14 +23,15 @@
     "predev": "tsx scripts/sync-modules.ts",
     "prebuild": "tsx scripts/sync-modules.ts",
     "remove:module": "tsx scripts/remove-module.ts",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/*.ts\""
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/*.ts\"",
+    "release": "bash scripts/release.sh"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
     "@phosphor-icons/react": "^2.1.10",
     "@scalar/hono-api-reference": "^0.11.16",
     "@tanstack/react-query": "^5.102.3",
-    "@ziku/ui": "github:ziku-io/design-system",
+    "@ziku/ui": "github:ziku-io/design-system#v0.1.0",
     "better-auth": "^1.7.1",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
