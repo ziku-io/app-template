@@ -15,9 +15,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      # No `version` here on purpose: package.json's `packageManager` is the
+      # single source, so CI, Docker and laptops all run the same pnpm.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
